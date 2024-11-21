@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Food Waste and Insecurity Data</title>
+    <link rel="stylesheet" href="style.css">  <!-- Make sure the path to style.css is correct -->
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+</head>
+<body>
+    <header>
+        <h1>Food Waste and Insecurity Data</h1>
+        <p>This project explores global food waste and insecurity data through interactive visualizations.</p>
+    </header>
+
+    <!-- Interactive Visualization: Food Waste Comparison -->
+    <section id="food-waste">
+        <h2>Food Waste Comparison by Country</h2>
+        <p>Explore food waste volumes by sector (household, retail, food service) for countries with high-confidence estimates.</p>
+        <div id="food-waste-chart"></div>
+    </section>
+
+    <!-- Interactive Visualization: Food Insecurity Over Time -->
+    <section id="food-insecurity">
+        <h2>Food Insecurity Over Time</h2>
+        <p>Visualize changes in food insecurity levels (moderately and severely food insecure) across different years and countries.</p>
+        <div id="food-insecurity-chart"></div>
+    </section>
+
+    <!-- Additional Visualizations and Information -->
+    <section id="additional">
+        <h2>More Insights</h2>
+        <p>Learn about the relationship between food insecurity and dietary energy requirements across the globe.</p>
+    </section>
+
+    <footer>
+        <p>Project created by <strong>Nicholas Shor and Zoey Zhao</strong>.</p>
+    </footer>
+
+    <script type="module" src="app.js"></script>  <!-- Use type="module" for async/await compatibility -->
+</body>
+</html>
