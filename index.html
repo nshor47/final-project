@@ -1,42 +1,223 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Food Waste and Insecurity Data</title>
-    <link rel="stylesheet" href="style.css">  <!-- Make sure the path to style.css is correct -->
-    <script src="https://d3js.org/d3.v7.min.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Food Insecurity Line Chart</title>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <style>
+    .line {
+      fill: none;
+      stroke-width: 2;
+    }
+    .circle {
+      stroke: black;
+      stroke-width: 1.5;
+    }
+    .tooltip {
+      position: absolute;
+      padding: 5px;
+      background-color: white;
+      border: 1px solid black;
+      border-radius: 3px;
+      pointer-events: none;
+      display: none;
+    }
+    .axis-title {
+      font-size: 14px;
+      font-weight: bold;
+    }
+    body {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    label, select {
+        margin-bottom: 10px;
+    }
+  </style>
 </head>
 <body>
-    <header>
-        <h1>Food Waste and Insecurity Data</h1>
-        <p>This project explores global food waste and insecurity data through interactive visualizations.</p>
-    </header>
+  <h3>Food Insecurity Over Time by Region</h3>
 
-    <!-- Interactive Visualization: Food Waste Comparison -->
-    <section id="food-waste">
-        <h2>Food Waste Comparison by Country</h2>
-        <p>Explore food waste volumes by sector (household, retail, food service) for countries with high-confidence estimates.</p>
-        <div id="food-waste-chart"></div>
-    </section>
+  <!-- Dropdown for region selection -->
+  <label for="regionSelect">Select Region:</label>
+  <select id="regionSelect">
+    <option value="All regions">All regions</option>
+    <option value="Africa">Africa</option>
+    <option value="Asia">Asia</option>
+    <option value="Northern America">Northern America</option>
+    <option value="Europe">Europe</option>
+    <option value="Central America">Central America</option>
+    <option value="South America">South America</option>
+    <option value="Oceania">Oceania</option>
+  </select>
 
-    <!-- Interactive Visualization: Food Insecurity Over Time -->
-    <section id="food-insecurity">
-        <h2>Food Insecurity Over Time</h2>
-        <p>Visualize changes in food insecurity levels (moderately and severely food insecure) across different years and countries.</p>
-        <div id="food-insecurity-chart"></div>
-    </section>
+  <!-- SVG for the chart -->
+  <svg width="800" height="500"></svg>
 
-    <!-- Additional Visualizations and Information -->
-    <section id="additional">
-        <h2>More Insights</h2>
-        <p>Learn about the relationship between food insecurity and dietary energy requirements across the globe.</p>
-    </section>
+  <!-- Tooltip for hover info -->
+  <div id="tooltip" class="tooltip"></div>
 
-    <footer>
-        <p>Project created by <strong>Nicholas Shor and Zoey Zhao</strong>.</p>
-    </footer>
+  <script>
+    d3.csv("FAOSTAT_data_en_11-21-2024.csv").then(function(data) {
 
-    <script type="module" src="app.js"></script>  <!-- Use type="module" for async/await compatibility -->
+      // Preprocess data
+      data = data.filter(d => 
+        d.Item === "Prevalence of moderate or severe food insecurity in the total population (percent) (3-year average)"
+      ).filter(d => d.Year.split('-')[0] >= 2014);
+
+      // Parse and filter out zero-value data points
+      data.forEach(d => {
+        d.year = d3.timeParse("%Y-%Y")(d.Year);
+        d.value = +d.Value;
+      });
+
+      data = data.filter(d => d.value > 0); // Remove data points with value 0
+
+      // Define the region options for selection
+      const regionMapping = {
+        "Africa": ["Eastern Africa", "Middle Africa", "Northern Africa", "Southern Africa", "Western Africa", "Sub-Saharan Africa"],
+        "Asia": ["Central Asia", "Eastern Asia", "Southern Asia", "Western Asia", "South-eastern Asia"],
+        "Northern America": ["United States of America", "Canada", "Mexico"],
+        "Europe": ["Eastern Europe", "Western Europe", "Northern Europe", "Southern Europe"],
+        "Central America": ["Belize", "Costa Rica", "El Salvador", "Guatemala", "Honduras", "Nicaragua", "Panama"],
+        "South America": ["Argentina", "Bolivia", "Brazil", "Chile", "Colombia", "Ecuador", "Paraguay", "Peru", "Uruguay", "Venezuela"],
+        "Oceania": ["Australia and New Zealand", "Melanesia", "Micronesia", "Polynesia"]
+      };
+
+      const mainRegions = ["Africa", "Asia", "Northern America", "Europe", "Central America", "South America", "Oceania"];
+
+      // Set up margins and chart dimensions
+      const margin = {top: 20, right: 30, bottom: 50, left: 60};
+      const width = 800 - margin.left - margin.right;
+      const height = 500 - margin.top - margin.bottom;
+
+      // Set up scales
+      const x = d3.scaleTime().range([0, width]);
+      const y = d3.scaleLinear().range([height, 0]);
+
+      // Set up the line generator
+      const line = d3.line()
+        .x(d => x(d.year))
+        .y(d => y(d.value));
+
+      // Append the SVG and group element
+      const svg = d3.select("svg")
+        .append("g")
+        .attr("transform", `translate(${margin.left},${margin.top})`);
+
+      // Create the tooltip element
+      const tooltip = d3.select("#tooltip");
+
+      // Add axis titles
+      svg.append("text")
+        .attr("class", "axis-title")
+        .attr("transform", `translate(${width / 2},${height + margin.bottom - 10})`)
+        .style("text-anchor", "middle")
+        .text("Year");
+
+      svg.append("text")
+        .attr("class", "axis-title")
+        .attr("transform", `rotate(-90)`)
+        .attr("x", -height / 2)
+        .attr("y", -margin.left + 20)
+        .style("text-anchor", "middle")
+        .text("Percentage of Food Insecure People in Population");
+
+      // Function to update the chart based on the selected region
+      function updateChart(selectedRegion) {
+        // Determine which regions to include based on the selection
+        let regionsToInclude;
+        if (selectedRegion === "All regions") {
+          regionsToInclude = mainRegions;
+        } else {
+          regionsToInclude = regionMapping[selectedRegion] || [];
+        }
+
+        // Filter the data based on the selected regions
+        const filteredData = data.filter(d => regionsToInclude.includes(d.Area));
+
+        // Group the data by region
+        const groupedData = d3.groups(filteredData, d => d.Area);
+
+        // Update the scales
+        x.domain(d3.extent(filteredData, d => d.year));
+        y.domain([0, d3.max(filteredData, d => d.value)]);
+
+        // Clear the previous chart content
+        svg.selectAll("*").remove();
+
+        // Add the X axis
+        svg.append("g")
+          .attr("transform", `translate(0,${height})`)
+          .call(d3.axisBottom(x));
+
+        // Add the Y axis
+        svg.append("g")
+          .call(d3.axisLeft(y));
+        // Add axis titles
+        svg.append("text")
+            .attr("class", "axis-title")
+            .attr("transform", `translate(${width / 2},${height + margin.bottom - 10})`)
+            .style("text-anchor", "middle")
+            .text("Year");
+
+        svg.append("text")
+            .attr("class", "axis-title")
+            .attr("transform", `rotate(-90)`)
+            .attr("x", -height / 2)
+            .attr("y", -margin.left + 20)
+            .style("text-anchor", "middle")
+            .text("Percentage of Food Insecure People in Population");
+
+        // Add the lines for each region
+        groupedData.forEach(([region, values], i) => {
+          svg.append("path")
+            .datum(values)
+            .attr("class", "line")
+            .attr("d", line)
+            .style("stroke", d3.schemeCategory10[i % 10]);
+        });
+
+        // Add circles for data points
+        groupedData.forEach(([region, values]) => {
+          svg.selectAll(`.circle-${region}`)
+            .data(values)
+            .enter()
+            .append("circle")
+            .attr("class", "circle")
+            .attr("cx", d => x(d.year))
+            .attr("cy", d => y(d.value))
+            .attr("r", 5)
+            .attr("fill", "blue")
+            .on("mouseover", function(event, d) {
+              tooltip.style("display", "block")
+                .html(`<strong>Region:</strong> ${d.Area}<br>
+                       <strong>Year:</strong> ${d3.timeFormat("%Y")(d.year)}<br>
+                       <strong>Value:</strong> ${d.value}`);
+            })
+            .on("mousemove", function(event) {
+              tooltip.style("left", `${event.pageX + 10}px`)
+                     .style("top", `${event.pageY - 30}px`);
+            })
+            .on("mouseout", function() {
+              tooltip.style("display", "none");
+            });
+        });
+      }
+
+      // Initialize the chart with all regions selected
+      updateChart("All regions");
+
+      // Update the chart when the region selection changes
+      d3.select("#regionSelect").on("change", function() {
+        const selectedRegion = this.value;
+        updateChart(selectedRegion);
+      });
+
+    }).catch(error => console.error("Error loading data:", error));
+  </script>
 </body>
 </html>
