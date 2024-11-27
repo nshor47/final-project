@@ -201,17 +201,15 @@
 
     d3.csv("Food Waste data and research - by country.csv").then(function (wasteData) {
     d3.csv("FAOSTAT_data_en_11-21-2024.csv").then(function (insecureData) {
-        // Set up dimensions
         const width = 600,
             height = 400,
             radius = Math.min(width, height) / 2;
 
-        const foodWasteConversionFactor = 4000; // kcal per kg (adjusted factor)
-        let selectedCategory = "Household estimate (kg/capita/year)";
-        let calorieIntake = 2500; // Default calorie intake for food need calculation
-        let selectedConfidence = "Medium Confidence"; // Default confidence level
+        const foodWasteConversionFactor = 4000; 
+        let selectedCategory = "combined figures (kg/capita/year)";
+        let calorieIntake = 2500; 
+        let selectedConfidence = "All Countries"; 
 
-        // Create an SVG container
         const svg = d3.select("#energyGraph")
             .append("svg")
             .attr("width", width)
@@ -241,7 +239,6 @@
             .range(["steelblue", "orange"]);
 
         function calculateAndRender() {
-            // Filter wasteData based on selected confidence level
             let filteredWasteData = wasteData;
             if (selectedConfidence !== "All Countries") {
                 filteredWasteData = wasteData.filter(
@@ -249,7 +246,6 @@
                 );
             }
 
-            // Calculate total food waste
             let totalFoodWaste = 0;
             filteredWasteData.forEach(d => {
                 const wasteKgPerCapita = +d[selectedCategory];
@@ -261,10 +257,9 @@
             let worldPopulation = 8000000000;
             let daysInYear = 365;
 
-            totalFoodWaste *= worldPopulation; // Total food waste globally
-            totalFoodWaste /= daysInYear; // Average food waste per day
+            totalFoodWaste *= worldPopulation; 
+            totalFoodWaste /= daysInYear;
 
-            // Calculate total food need
             let totalFoodNeed = 0;
 
             const foodInsecureData = insecureData.filter(
@@ -273,7 +268,7 @@
                     d.Year === "2021-2023"
             );
             foodInsecureData.forEach(d => {
-                const foodInsecurePeople = +d.Value * 1000000; // Convert millions to individuals
+                const foodInsecurePeople = +d.Value * 1000000; 
                 if (!isNaN(foodInsecurePeople)) {
                     totalFoodNeed += foodInsecurePeople * calorieIntake;
                 }
@@ -317,7 +312,6 @@
                     tooltip.transition().duration(200).style("opacity", 0);
                 });
 
-            // Add labels
             chartGroup.selectAll("text")
                 .data(pie(data))
                 .enter()
@@ -331,7 +325,6 @@
                 .style("font-size", "12px");
         }
 
-        // Add slider for calorie intake
         d3.select("#controls")
             .append("label")
             .text("Caloric Intake (kcal/day): ")
@@ -352,7 +345,6 @@
             .attr("id", "calorieValue")
             .text(calorieIntake);
 
-        // Add dropdown for food waste category
         const categories = [
             { value: "combined figures (kg/capita/year)", label: "Combined Figures" },
             { value: "Household estimate (kg/capita/year)", label: "Household Estimate" },
@@ -372,10 +364,9 @@
             .data(categories)
             .enter()
             .append("option")
-            .attr("value", d => d.value)  // Use the value for the option value
-            .text(d => d.label);  // Use the label for the displayed text
+            .attr("value", d => d.value)  
+            .text(d => d.label); 
 
-        // Add dropdown for confidence level
         const confidenceLevels = [
             "All Countries",
             "Very Low Confidence",
@@ -400,7 +391,7 @@
             .text(d => d)
             .property("selected", d => d === selectedConfidence);
 
-        calculateAndRender(); // Initial render
+        calculateAndRender();
     }).catch(error => console.error("Error loading FAOSTAT data:", error));
     }).catch(error => console.error("Error loading Food Waste data:", error));
   </script>
