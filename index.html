@@ -62,6 +62,7 @@
   <div id="energyGraph"></div>
 
   <script>
+    //Line chart
     d3.csv("FAOSTAT_data_en_11-21-2024.csv").then(function(data) {
 
       data = data.filter(d => 
@@ -199,16 +200,18 @@
     }).catch(error => console.error("Error loading data:", error));
 
 
-    d3.csv("Food Waste data and research - by country.csv").then(function (wasteData) {
+
+//Pie chart
+d3.csv("Food Waste data and research - by country.csv").then(function (wasteData) {
     d3.csv("FAOSTAT_data_en_11-21-2024.csv").then(function (insecureData) {
         const width = 600,
             height = 400,
             radius = Math.min(width, height) / 2;
 
-        const foodWasteConversionFactor = 4000; 
+        const foodWasteConversionFactor = 4000;
         let selectedCategory = "combined figures (kg/capita/year)";
-        let calorieIntake = 2500; 
-        let selectedConfidence = "All Countries"; 
+        let calorieIntake = 2500;
+        let selectedConfidence = "All Countries";
 
         const svg = d3.select("#energyGraph")
             .append("svg")
@@ -218,7 +221,8 @@
         const chartGroup = svg.append("g")
             .attr("transform", `translate(${width / 2},${height / 2})`);
 
-        const tooltip = d3.select("#energyGraph")
+        // Tooltip setup
+        const tooltip_pie = d3.select("#energyGraph")
             .append("div")
             .style("position", "absolute")
             .style("background-color", "white")
@@ -257,7 +261,7 @@
             let worldPopulation = 8000000000;
             let daysInYear = 365;
 
-            totalFoodWaste *= worldPopulation; 
+            totalFoodWaste *= worldPopulation;
             totalFoodWaste /= daysInYear;
 
             let totalFoodNeed = 0;
@@ -268,7 +272,7 @@
                     d.Year === "2021-2023"
             );
             foodInsecureData.forEach(d => {
-                const foodInsecurePeople = +d.Value * 1000000; 
+                const foodInsecurePeople = +d.Value * 1000000;
                 if (!isNaN(foodInsecurePeople)) {
                     totalFoodNeed += foodInsecurePeople * calorieIntake;
                 }
@@ -294,8 +298,8 @@
                 .attr("stroke", "white")
                 .style("stroke-width", "2px")
                 .on("mouseover", function (event, d) {
-                    tooltip.transition().duration(200).style("opacity", 1);
-                    tooltip
+                    tooltip_pie.transition().duration(200).style("opacity", 1);
+                    tooltip_pie
                         .html(
                             `<strong>${d.data.label}</strong><br>
                         ${(d.data.value / 1e12).toFixed(2)} Trillion kcal`
@@ -304,12 +308,12 @@
                         .style("top", event.pageY - 30 + "px");
                 })
                 .on("mousemove", function (event) {
-                    tooltip
+                    tooltip_pie
                         .style("left", event.pageX + 10 + "px")
                         .style("top", event.pageY - 30 + "px");
                 })
                 .on("mouseout", function () {
-                    tooltip.transition().duration(200).style("opacity", 0);
+                    tooltip_pie.transition().duration(200).style("opacity", 0);
                 });
 
             chartGroup.selectAll("text")
@@ -325,6 +329,7 @@
                 .style("font-size", "12px");
         }
 
+        // Controls for slider and dropdown
         d3.select("#controls")
             .append("label")
             .text("Caloric Intake (kcal/day): ")
@@ -354,7 +359,7 @@
 
         d3.select("#controls")
             .append("label")
-            .text("Food Waste Category (kcal/day): ")
+            .text("Food Waste Category (kg/capita/year): ")
             .append("select")
             .on("change", function () {
                 selectedCategory = this.value;
@@ -365,7 +370,7 @@
             .enter()
             .append("option")
             .attr("value", d => d.value)  
-            .text(d => d.label); 
+            .text(d => d.label);
 
         const confidenceLevels = [
             "All Countries",
@@ -391,9 +396,10 @@
             .text(d => d)
             .property("selected", d => d === selectedConfidence);
 
+        // Initial render
         calculateAndRender();
     }).catch(error => console.error("Error loading FAOSTAT data:", error));
-    }).catch(error => console.error("Error loading Food Waste data:", error));
+}).catch(error => console.error("Error loading Food Waste data:", error));
   </script>
 </body>
 </html>
